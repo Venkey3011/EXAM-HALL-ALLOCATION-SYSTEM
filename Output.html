@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Exam Seating Arrangement</title>
+    <link rel="shortcut icon" href="images/AdhiLogo.png" type="image/x-icon">
+    <link rel="stylesheet" href="./Styles/Output.css" />
+    <style>
+        .table-container {
+            display: none;
+        }
+        .table-container.active {
+            display: block;
+        }
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1>REPORT</h1>
+            <a href="../dashboard.html"><button class="exit-btn">Exit</button></a>
+        </div>
+    </header>
+    <!-- College and Exam Heading -->
+    <h1>ADHI COLLEGE OF ENGINEERING &amp; TECHNOLOGY</h1>
+    <h2>INTERNAL ASSESSMENT EXAMINATION</h2>
+
+    <!-- Basic info row: Date, Session, Hall No -->
+    <table class="info-table">
+        <tr>
+            <td><strong>DATE:</strong> <span id="examDate"></span></td>
+            <td><strong>SESSION:</strong> <span id="session"></span></td>
+            <td><strong>HALL NO:</strong><span id="hall"></span></td>
+        </tr>
+    </table>
+
+    <!-- Table Containers -->
+    <div id="tableContainer"></div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        <button id="prevBtn" class="prebtn" onclick="showPreviousTable()">Previous</button>
+        <button id="nextBtn" class="nextbtn" onclick="showNextTable()">Next</button>
+    </div>
+
+    <!-- Footer rows for signatures, counts, etc. -->
+    <table class="footer-table">
+        <tr>
+            <td><strong>COLLEGE CODE &amp; NAME:</strong> ___________________</td>
+            <td><strong>HALL SUPERVISOR SIGNATURE:</strong> _____________</td>
+            <td><strong>SIGNATURE:</strong> _____________</td>
+        </tr>
+        <tr>
+            <td><strong>NO. OF STUDENT PRESENT:</strong> _____</td>
+            <td><strong>NO. OF STUDENT ABSENT:</strong> _____</td>
+            <td><strong>TOTAL:</strong> _____</td>
+        </tr>
+    </table>
+
+    <p class="right-align bold">CHIEF SUPERINTENDENT</p>
+    <button class="print-btn" onclick="printReport()">Print Report</button>
+
+    <script src="Scripts/print.js"></script>
+    <script>
+        // Retrieve the data from localStorage
+        const seatAllocationData = JSON.parse(localStorage.getItem("seatAllocationData"));
+        let currentTableIndex = 0;
+        let tables = [];
+        const studentsPerPage = 25; // 25 students per page (5 rows of 5 seats each)
+
+        // Hall data from Hall-datas.html
+        const hallData = [
+            "MB 001", "MB 002", "MB 003", "MB 101", "MB 102", "MB 103", "MB 104",
+            "MB 201", "MB 202", "MB 203", "MB 301", "MB 302", "MB 303", "MB 304a", "MB 304b",
+            "ECE 101", "ECE 102", "ECE 103", "ECE 301", "ECE 302", "ECE 303"
+        ];
+
+        if (seatAllocationData) {
+            // Display the selected date
+            document.getElementById("examDate").textContent = seatAllocationData.examDate;
+
+            // Display the selected session
+            document.getElementById("session").textContent = seatAllocationData.session;
+
+            // Assign a hall number dynamically
+            const hallIndex = currentTableIndex % hallData.length;
+            document.getElementById("hall").textContent = hallData[hallIndex];
+
+            // Group departments into pairs
+            const groupedDepartments = [];
+            for (let i = 0; i < seatAllocationData.departments.length; i += 2) {
+                groupedDepartments.push(seatAllocationData.departments.slice(i, i + 2));
+            }
+
+            // Generate tables for each pair of departments
+            const tableContainer = document.getElementById("tableContainer");
+            groupedDepartments.forEach(async (group, index) => {
+                try {
+                    // Fetch all students for the departments in the group
+                    const students1 = await fetchStudents(group[0]);
+                    const students2 = group[1] ? await fetchStudents(group[1]) : [];
+
+                    console.log(`Fetched students for ${group[0]}:`, students1);
+                    console.log(`Fetched students for ${group[1] || "N/A"}:`, students2);
+
+                    // Separate students by gender if allocation type is "unmerged"
+                    let maleStudents1 = [];
+                    let femaleStudents1 = [];
+                    let maleStudents2 = [];
+                    let femaleStudents2 = [];
+
+                    if (seatAllocationData.allocationType === "unmerged") {
+                        maleStudents1 = students1.filter(student => student.gender === "Male");
+                        femaleStudents1 = students1.filter(student => student.gender === "Female");
+                        maleStudents2 = students2.filter(student => student.gender === "Male");
+                        femaleStudents2 = students2.filter(student => student.gender === "Female");
+                    } else {
+                        maleStudents1 = students1;
+                        maleStudents2 = students2;
+                    }
+
+                    // Generate tables for male students
+                    const malePages = Math.ceil(Math.max(maleStudents1.length, maleStudents2.length) / studentsPerPage);
+                    for (let page = 0; page < malePages; page++) {
+                        const table = document.createElement("div");
+                        table.className = "table-container";
+                        table.innerHTML = `
+                            <h3>Departments: ${group.join(", ")} <span class="Gender-Show">- Male Students - Page ${page + 1} </span></h3>
+                            <table class="main-table">
+                                <thead>
+                                    <tr>
+                                        <th>SEAT NO</th>
+                                        <th>DEPT</th>
+                                        <th>REG NO</th>
+                                        <th>DEPT</th>
+                                        <th>REG NO</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-male-${index}-${page}">
+                                    <!-- Rows will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        `;
+                        tableContainer.appendChild(table);
+                        tables.push(table);
+
+                        // Populate the table rows with male student data for the current page
+                        populateTableRows(`tbody-male-${index}-${page}`, page, maleStudents1, maleStudents2);
+                    }
+
+                    // Generate tables for female students
+                    const femalePages = Math.ceil(Math.max(femaleStudents1.length, femaleStudents2.length) / studentsPerPage);
+                    for (let page = 0; page < femalePages; page++) {
+                        const table = document.createElement("div");
+                        table.className = "table-container";
+                        table.innerHTML = `
+                            <h3>Departments: ${group.join(", ")} <span class="Gender-Show">- Female Students - Page ${page + 1} </span></h3>
+                            <table class="main-table">
+                                <thead>
+                                    <tr>
+                                        <th>SEAT NO</th>
+                                        <th>DEPT</th>
+                                        <th>REG NO</th>
+                                        <th>DEPT</th>
+                                        <th>REG NO</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-female-${index}-${page}">
+                                    <!-- Rows will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        `;
+                        tableContainer.appendChild(table);
+                        tables.push(table);
+
+                        // Populate the table rows with female student data for the current page
+                        populateTableRows(`tbody-female-${index}-${page}`, page, femaleStudents1, femaleStudents2);
+                    }
+                } catch (error) {
+                    console.error(`Error processing group ${group.join(", ")}:`, error);
+                }
+            });
+
+            // Show the first table initially
+            showTable(currentTableIndex);
+        } else {
+            alert("No data found. Please go back and select departments, date, and session.");
+        }
+
+        // Function to fetch students from MongoDB
+        async function fetchStudents(departmentYear) {
+            try {
+                const response = await fetch(`http://localhost:5000/api/student-${departmentYear.toLowerCase()}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch students for ${departmentYear}: ${response.statusText}`);
+                }
+                const students = await response.json();
+                return students;
+            } catch (error) {
+                console.error(`Error fetching students for ${departmentYear}:`, error);
+                return [];
+            }
+        }
+
+        // Function to populate table rows with student data for a specific page
+        function populateTableRows(tbodyId, page, students1, students2) {
+            const tbody = document.getElementById(tbodyId);
+            let rows = "";
+
+            const startIndex = page * studentsPerPage;
+            const endIndex = startIndex + studentsPerPage;
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const student1 = students1[i] || { registerNumber: "..." };
+                const student2 = students2[i] || { registerNumber: "..." };
+
+                rows += `
+                    <tr>
+                        <td>${(i % studentsPerPage) + 1}.</td>
+                        <td>${students1[0]?.department || "..."}</td>
+                        <td>${student1.registerNumber}</td>
+                        <td>${students2[0]?.department || "..."}</td>
+                        <td>${student2.registerNumber}</td>
+                    </tr
+                `;
+            }
+
+            tbody.innerHTML = rows;
+        }
+
+        // Function to show the current table and hide others
+        function showTable(index) {
+            tables.forEach((table, i) => {
+                table.style.display = i === index ? "block" : "none";
+            });
+            document.getElementById("prevBtn").disabled = index === 0;
+            document.getElementById("nextBtn").disabled = index === tables.length - 1;
+
+            // Update the hall number dynamically
+            const hallIndex = index % hallData.length;
+            document.getElementById("hall").textContent = hallData[hallIndex];
+        }
+
+        // Function to show the next table
+        function showNextTable() {
+            if (currentTableIndex < tables.length - 1) {
+                currentTableIndex++;
+                showTable(currentTableIndex);
+            }
+        }
+
+        // Function to show the previous table
+        function showPreviousTable() {
+            if (currentTableIndex > 0) {
+                currentTableIndex--;
+                showTable(currentTableIndex);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seat Allocation</title>
+    <link rel="shortcut icon" href="images/AdhiLogo.png" type="image/x-icon">
+    <link rel="stylesheet" href="Styles/Seat-Allocate.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <h1>SEATING  ALLOCATION  FOR  STUDENTS</h1>
+            <a href="dashboard.html"><button class="exit-btn">Exit</button></a>
+        </div>
+    </header>
+    <main>
+        <section>
+            <form id="seatAllocationForm">
+                <div class="input-1 inputs">
+                    <label for="options" class="label">Select Departments and Year:</label>
+                    <div class="card-container">
+                        <div class="department-card">
+                            <label> <input type="checkbox" name="departmentYear" value="CSE-I"> CSE - I year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="CSE-II"> CSE - II year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="CSE-III"> CSE - III year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="CSE-IV"> CSE - IV year </label>
+                        </div>
+                        <div class="department-card">
+                            <label> <input type="checkbox" name="departmentYear" value="IT-I"> IT - I year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="IT-II"> IT - II year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="IT-III"> IT - III year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="IT-IV"> IT - IV year </label>
+                        </div>
+                        <div class="department-card">
+                            <label> <input type="checkbox" name="departmentYear" value="EEE-I"> EEE - I year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="EEE-II"> EEE - II year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="EEE-III"> EEE - III year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="EEE-IV"> EEE - IV year </label>
+                        </div>
+                        <div class="department-card">
+                            <label> <input type="checkbox" name="departmentYear" value="ECE-I"> ECE - I year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="ECE-II"> ECE - II year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="ECE-III"> ECE - III year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="ECE-IV"> ECE - IV year </label>
+                        </div>
+                        <div class="department-card">
+                            <label> <input type="checkbox" name="departmentYear" value="AI&DS-I"> AI & DS - I year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="AI&DS-II"> AI & DS - II year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="AI&DS-III"> AI & DS - III year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="AI&DS-IV"> AI & DS - IV year </label>
+                        </div>
+                        <div class="department-card">
+                            <label> <input type="checkbox" name="departmentYear" value="MECH-I"> MECH - I year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="MECH-II"> MECH - II year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="MECH-III"> MECH  - III year </label>
+                            <label> <input type="checkbox" name="departmentYear" value="MECH-IV"> MECH - IV year </label>
+                        </div>
+                    </div>
+                </div>
+            
+                <div class="input-2 inputs">
+                    <label for="date" class="label">Select a Date of Exam:</label>
+                    <input type="date" id="date" name="date">
+                </div>
+            
+                <div class="input-3 inputs">
+                    <label for="radio" class="label">Select a Session:</label>
+                    <label><input type="radio" name="session" value="FN">FN</label>
+                    <label><input type="radio" name="session" value="AN">AN</label>
+                </div>
+
+                <div class="input-4 inputs">
+                    <label for="allocationType" class="label">Select Allocation Type:</label>
+                    <label><input type="radio" name="allocationType" value="merged"> Boys & Girls MERGED</label>
+                    <label><input type="radio" name="allocationType" value="unmerged"> Un-MERGED</label>
+                </div>
+            
+                <div class="btn">
+                    <button type="button" class="Allocate-btn" onclick="allocateSeats()">Allocate</button>
+                </div>
+            </form>
+        </section>
+    </main>
+    <script>
+        function allocateSeats() {
+            const selectedDepartments = Array.from(document.querySelectorAll('input[name="departmentYear"]:checked'))
+                                            .map(input => input.value);
+            const examDate = document.getElementById("date").value;
+            const session = document.querySelector('input[name="session"]:checked')?.value;
+            const allocationType = document.querySelector('input[name="allocationType"]:checked')?.value;
+
+            if (selectedDepartments.length === 0 || !examDate || !session || !allocationType) {
+                alert("Please select departments, a date, a session, and an allocation type.");
+                return;
+            }
+
+            const requestData = {
+                departments: selectedDepartments,
+                examDate: examDate,
+                session: session,
+                allocationType: allocationType
+            };
+
+            // Store the data in localStorage before redirecting
+            localStorage.setItem("seatAllocationData", JSON.stringify(requestData));
+
+            // Redirect to the output page
+            window.location.href = "Output.html";
+        }
+    </script>  
+</body>
+</html>
